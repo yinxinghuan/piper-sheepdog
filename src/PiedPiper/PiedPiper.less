@@ -1,0 +1,506 @@
+.pp {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  background: radial-gradient(120% 60% at 50% 100%, #6c9e62 0%, #2f5a39 50%, #142214 100%);
+  overflow: hidden;
+  color: #f6efdc;
+  font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  touch-action: none;
+
+  &__canvas { position: absolute; inset: 0; }
+
+  // Single unified top bar — score on the left, time on the right, one glass.
+  &__topbar {
+    position: absolute;
+    top: env(safe-area-inset-top, 8px);
+    left: 16px;
+    right: 16px;
+    padding: 8px 20px 10px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    z-index: 10;
+    pointer-events: auto;
+    background: linear-gradient(135deg, rgba(28, 48, 28, .42), rgba(12, 24, 14, .42));
+    backdrop-filter: blur(14px) saturate(140%);
+    -webkit-backdrop-filter: blur(14px) saturate(140%);
+    border: 1px solid rgba(255, 240, 200, .08);
+    border-radius: 20px;
+    font-family: 'Space Grotesk', 'Inter', system-ui, sans-serif;
+    box-shadow: 0 6px 18px rgba(0, 0, 0, .28);
+  }
+  &__topbar-score, &__topbar-time {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0;
+  }
+  &__topbar-time { align-items: flex-end; }
+  &__topbar-num {
+    font-family: 'Baloo 2', sans-serif;
+    font-size: 34px;
+    font-weight: 800;
+    line-height: 1;
+    letter-spacing: -.01em;
+    background: linear-gradient(180deg, #f6efdc 0%, #d9cba0 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    text-shadow: 0 0 18px rgba(232, 197, 74, .15);
+  }
+  &__topbar-caption {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px;
+    font-weight: 600;
+    letter-spacing: .26em;
+    color: rgba(220, 220, 195, .55);
+    text-transform: uppercase;
+    margin-top: 2px;
+  }
+
+  // Combo chip — sits inside the top bar between score and time when active.
+  &__combo-float {
+    display: flex;
+    align-items: baseline;
+    gap: 3px;
+    padding: 4px 12px 5px;
+    border-radius: 999px;
+    font-family: 'Baloo 2', sans-serif;
+    font-weight: 800;
+    line-height: 1;
+    background: linear-gradient(135deg, rgba(255, 200, 80, .35), rgba(255, 130, 60, .25));
+    border: 1px solid rgba(255, 200, 80, .45);
+    color: #ffe17a;
+    box-shadow: 0 0 14px rgba(255, 200, 80, .28);
+    animation: pp-combo-pop .35s ease-out;
+  }
+  &__combo-float--m3 {
+    color: #ff9844;
+    background: linear-gradient(135deg, rgba(255, 100, 50, .35), rgba(255, 60, 40, .25));
+    border-color: rgba(255, 120, 60, .55);
+    box-shadow: 0 0 18px rgba(255, 120, 60, .45);
+  }
+  &__combo-x { font-size: 14px; opacity: .85; }
+  &__combo-n { font-size: 22px; }
+  // Moved to a corner-fixed slot rather than HUD-flex so it doesn't crowd
+  // the score row. Lives in the bottom-left where the old dev dropdown was.
+  &__watermark {
+    position: absolute;
+    left: 16px;
+    bottom: calc(env(safe-area-inset-bottom, 16px) + 14px);
+    height: 28px;
+    width: auto;
+    opacity: .65;
+    z-index: 9;
+    pointer-events: none;
+    filter: drop-shadow(0 2px 6px rgba(0, 0, 0, .45));
+  }
+
+  // Target banner — pure track, no glass.
+  // The glass treatment lives in the top bar; the target chips below it sit
+  // on the world view directly so the dye colors read at full saturation and
+  // the two HUD bands feel distinct rather than uniform.
+  &__banner {
+    position: absolute;
+    top: calc(env(safe-area-inset-top, 8px) + 80px);
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 10;
+    pointer-events: none;
+    display: flex;
+    align-items: center;
+    gap: 18px;
+    padding: 0;
+    background: transparent;
+    border: none;
+    font-family: 'Space Grotesk', sans-serif;
+    // gentle text shadow on each chip text so it reads against bright grass.
+    text-shadow: 0 1px 2px rgba(0, 0, 0, .55);
+  }
+  &__banner-divider {
+    width: 1px;
+    height: 22px;
+    background: rgba(246, 239, 220, .35);
+    box-shadow: 0 0 4px rgba(0, 0, 0, .35);
+  }
+  // bump the swatch contrast since it's no longer floating on glass
+  &__gchip-color {
+    box-shadow: 0 0 0 1.5px rgba(0, 0, 0, .25), 0 2px 6px rgba(0, 0, 0, .35);
+  }
+  &__gchip-name {
+    filter: drop-shadow(0 1px 2px rgba(0, 0, 0, .55));
+  }
+  &__gchip-pip {
+    box-shadow: 0 1px 2px rgba(0, 0, 0, .35);
+  }
+
+  // Dual gate chips
+  &__gchip {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-family: 'Baloo 2', sans-serif;
+    font-weight: 800;
+  }
+  &__gchip-arrow {
+    font-size: 28px;
+    font-weight: 800;
+    color: rgba(246, 239, 220, .92);
+    line-height: 1;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, .55);
+  }
+  &__gchip--right .pp__gchip-arrow { order: 9; }
+  &__gchip-color {
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    border: 1.5px solid rgba(255, 255, 255, .45);
+    box-shadow: 0 0 10px rgba(0, 0, 0, .3);
+  }
+  &__gchip-name {
+    font-size: 16px;
+    letter-spacing: -.01em;
+  }
+  &__gchip-pips {
+    display: flex;
+    gap: 3px;
+  }
+  &__gchip-pip {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: rgba(246, 239, 220, .18);
+    transition: background .25s, box-shadow .25s;
+  }
+
+  // Bark button — bottom-right, big circular tap target. Cooldown shown via
+  // SVG stroke-dasharray that fills as the timer expires.
+  &__bark {
+    position: absolute;
+    right: 18px;
+    bottom: calc(env(safe-area-inset-bottom, 16px) + 16px);
+    z-index: 10;
+    pointer-events: auto;
+    width: 84px;
+    height: 84px;
+    border-radius: 50%;
+    border: none;
+    background: linear-gradient(180deg, rgba(28, 48, 28, .85), rgba(16, 28, 16, .85));
+    color: #f4ecd8;
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    box-shadow:
+      0 12px 28px rgba(0, 0, 0, .45),
+      inset 0 1px 0 rgba(255, 255, 255, .12);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform .12s ease;
+    opacity: .7;
+  }
+  &__bark--ready {
+    opacity: 1;
+    box-shadow:
+      0 16px 32px rgba(255, 200, 80, .35),
+      inset 0 1px 0 rgba(255, 255, 255, .14);
+    animation: pp-bark-pulse 1.4s ease-in-out infinite;
+  }
+  &__bark:active { transform: scale(.94); }
+  &__bark-ring {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+  }
+  &__bark-inner {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    color: #ffe17a;
+  }
+  &__bark-icon {
+    width: 32px;
+    height: 24px;
+    color: #ffe17a;
+    filter: drop-shadow(0 1px 2px rgba(0,0,0,.5));
+  }
+  &__bark-text {
+    font-family: 'Baloo 2', sans-serif;
+    font-weight: 800;
+    font-size: 17px;
+    letter-spacing: .06em;
+    color: #ffe17a;
+    line-height: 1;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, .55);
+  }
+  // Expanding rings emitted from the button when the bark fires (CSS only).
+  &__bark-rings {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+  }
+  &__bark-ring1,
+  &__bark-ring2 {
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    border: 3px solid #ffe17a;
+    opacity: 0;
+    will-change: transform, opacity;
+  }
+  &__bark-ring1 {
+    animation: pp-bark-ring .65s cubic-bezier(.22, .61, .36, 1) forwards;
+  }
+  &__bark-ring2 {
+    animation: pp-bark-ring .65s cubic-bezier(.22, .61, .36, 1) .14s forwards;
+    border-color: #fff5c0;
+  }
+  // The button itself also kicks slightly each fire to confirm the tap.
+  &__bark:active &__bark-inner {
+    transform: scale(.92);
+  }
+
+  // Floating delivery pellet — appears at the gate side (left/right column).
+  &__pellet {
+    position: absolute;
+    top: 30%;
+    z-index: 12;
+    pointer-events: none;
+    font-family: 'Baloo 2', sans-serif;
+    font-size: 38px;
+    font-weight: 800;
+    letter-spacing: -.01em;
+    text-shadow:
+      0 4px 0  rgba(0, 0, 0, .12),
+      0 8px 28px rgba(0, 0, 0, .35);
+    animation: pp-pellet-rise 1.1s cubic-bezier(.22, .61, .36, 1) forwards;
+  }
+  &__pellet--left   { left: 22%; transform: translateX(-50%); }
+  &__pellet--right  { left: 78%; transform: translateX(-50%); }
+  &__pellet--center { left: 50%; transform: translateX(-50%); }
+  &__pellet--good {
+    filter: drop-shadow(0 4px 16px rgba(232, 197, 74, .55));
+  }
+  &__pellet--bad {
+    filter: drop-shadow(0 4px 16px rgba(255, 91, 58, .55));
+  }
+
+  // Wolf attack flash + scattered pellet
+  &__wolf-fx {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    z-index: 14;
+    font-family: 'Baloo 2', sans-serif;
+  }
+  &__wolf-flash {
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(60% 60% at 50% 50%, rgba(255, 70, 50, .35) 0%, rgba(255, 70, 50, 0) 75%);
+    animation: pp-wolf-flash .5s ease-out forwards;
+  }
+  &__wolf-pellet {
+    position: absolute;
+    top: 36%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    display: flex;
+    align-items: baseline;
+    gap: 4px;
+    color: #ff7a55;
+    text-shadow: 0 4px 18px rgba(255, 80, 50, .7);
+    animation: pp-wolf-pellet 1.4s cubic-bezier(.22, .61, .36, 1) forwards;
+    font-weight: 800;
+  }
+  &__wolf-minus { font-size: 36px; line-height: 1; }
+  &__wolf-count { font-size: 56px; line-height: 1; }
+  &__wolf-label {
+    align-self: center;
+    margin-left: 8px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: .25em;
+    color: rgba(255, 130, 100, .9);
+  }
+
+  &__joystick {
+    position: absolute;
+    pointer-events: none;
+    z-index: 5;
+    transform: translate(-50%, -50%);
+    &__ring {
+      width: 120px;
+      height: 120px;
+      border-radius: 50%;
+      border: 4px solid rgba(246, 239, 220, .55);
+      background: rgba(0, 0, 0, .18);
+      backdrop-filter: blur(3px);
+      position: relative;
+    }
+    &__stick {
+      position: absolute;
+      width: 56px;
+      height: 56px;
+      border-radius: 50%;
+      background: rgba(246, 239, 220, .85);
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      transition: transform 60ms linear;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, .3);
+    }
+  }
+
+  &__gameover {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 32px;
+    z-index: 20;
+    background: radial-gradient(80% 80% at 50% 30%, rgba(80, 130, 70, .55) 0%, rgba(12, 22, 14, .92) 80%);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    font-family: 'Space Grotesk', 'Inter', system-ui, sans-serif;
+  }
+  &__gameover-eyebrow {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: rgba(232, 197, 74, .85);
+    font-weight: 600;
+    letter-spacing: .35em;
+    text-transform: uppercase;
+    margin-bottom: 18px;
+  }
+  &__final-score {
+    font-family: 'Baloo 2', sans-serif;
+    font-size: 128px;
+    font-weight: 800;
+    margin: 0;
+    line-height: 1.1;
+    letter-spacing: -.01em;
+    padding: 0 .12em;
+    max-width: 100%;
+    background: linear-gradient(180deg, #ffe17a 0%, #ff9844 70%, #ff6b3a 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    filter: drop-shadow(0 14px 30px rgba(255, 150, 60, .3));
+  }
+  &__final {
+    margin: 14px 0 32px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    font-weight: 500;
+    letter-spacing: .25em;
+    text-transform: uppercase;
+    color: rgba(246, 239, 220, .7);
+  }
+  &__cta {
+    background: linear-gradient(135deg, #ffe17a 0%, #ff9844 60%, #ff6b3a 100%);
+    color: #1a1a1a;
+    border: none;
+    padding: 16px 38px;
+    border-radius: 999px;
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 700;
+    font-size: 16px;
+    letter-spacing: .05em;
+    text-transform: uppercase;
+    cursor: pointer;
+    box-shadow:
+      0 16px 40px rgba(255, 150, 60, .42),
+      inset 0 1px 0 rgba(255, 255, 255, .6);
+    pointer-events: auto;
+    transition: transform .15s ease;
+  }
+  &__cta:active { transform: translateY(2px); }
+  &__leaderboard-btn {
+    margin-top: 16px;
+    background: rgba(246, 239, 220, .06);
+    border: 1px solid rgba(246, 239, 220, .18);
+    color: #f6efdc;
+    padding: 12px 26px;
+    border-radius: 999px;
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 600;
+    font-size: 12px;
+    letter-spacing: .25em;
+    text-transform: uppercase;
+    cursor: pointer;
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+  }
+}
+
+@keyframes pp-pellet-rise {
+  0%   { opacity: 0; transform: translate(-50%, 14px) scale(.7); }
+  18%  { opacity: 1; transform: translate(-50%, -4px) scale(1.12); }
+  100% { opacity: 0; transform: translate(-50%, -78px) scale(.92); }
+}
+@keyframes pp-combo-pop {
+  0%   { transform: scale(.6); }
+  40%  { transform: scale(1.25); }
+  100% { transform: scale(1); }
+}
+@keyframes pp-bark-pulse {
+  0%   { box-shadow: 0 16px 32px rgba(255, 200, 80, .35), inset 0 1px 0 rgba(255, 255, 255, .14), 0 0 0 0 rgba(255, 200, 80, .35); }
+  60%  { box-shadow: 0 16px 32px rgba(255, 200, 80, .35), inset 0 1px 0 rgba(255, 255, 255, .14), 0 0 0 14px rgba(255, 200, 80, 0); }
+  100% { box-shadow: 0 16px 32px rgba(255, 200, 80, .35), inset 0 1px 0 rgba(255, 255, 255, .14), 0 0 0 0 rgba(255, 200, 80, 0); }
+}
+@keyframes pp-wolf-flash {
+  0%   { opacity: 1; }
+  100% { opacity: 0; }
+}
+@keyframes pp-wolf-pellet {
+  0%   { opacity: 0; transform: translate(-50%, -30%) scale(.7); }
+  15%  { opacity: 1; transform: translate(-50%, -55%) scale(1.16); }
+  35%  { opacity: 1; transform: translate(-50%, -50%) scale(1.0); }
+  100% { opacity: 0; transform: translate(-50%, -78%) scale(.9); }
+}
+@keyframes pp-bark-ring {
+  0%   { transform: scale(.65); opacity: 0;   }
+  15%  { transform: scale(.85); opacity: .9;  }
+  100% { transform: scale(2.6); opacity: 0;   }
+}
+
+// World-space bark wave (drei <Html>) — circles centered on the dog, always
+// rendered as perfect circles because they're DOM elements (border-radius:50%).
+.pp-barkwave {
+  position: relative;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+  &__r1, &__r2 {
+    position: absolute;
+    left: 0; top: 0;
+    width: 240px;
+    height: 240px;
+    margin-left: -120px;
+    margin-top: -120px;
+    border-radius: 50%;
+    border: 4px solid #ffe17a;
+    opacity: 0;
+    will-change: transform, opacity;
+    transform-origin: 50% 50%;
+  }
+  &__r1 { animation: pp-barkwave 0.72s cubic-bezier(.22, .61, .36, 1) forwards; }
+  &__r2 {
+    animation: pp-barkwave 0.72s cubic-bezier(.22, .61, .36, 1) .14s forwards;
+    border-color: #fff5c0;
+    border-width: 3px;
+  }
+}
+@keyframes pp-barkwave {
+  0%   { transform: scale(.12); opacity: 0;   }
+  12%  { transform: scale(.32); opacity: .9;  }
+  100% { transform: scale(1.6); opacity: 0;   }
+}

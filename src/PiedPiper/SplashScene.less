@@ -1,0 +1,240 @@
+// Mirrors Penguin Rescue's splash structure 1:1:
+//   sky → aurora-equivalent (sun halo) → pollen → pasture plane (= ice plane)
+//   → back hills (= back icebergs, drifts) → front hills (= front icebergs)
+//   → content overlay (title centered, subtitle, best, CTA).
+
+.pp-splash {
+  position: absolute;
+  inset: 0;
+  z-index: 20;
+  overflow: hidden;
+  color: #f6efdc;
+  font-family: 'Space Grotesk', 'Inter', system-ui, sans-serif;
+
+  // SKY — radial warm sunset
+  &__sky {
+    position: absolute;
+    inset: 0;
+    background:
+      radial-gradient(70% 50% at 50% 0%, #f3b86c 0%, #d86b30 60%, #5e2710 100%);
+  }
+
+  // SUN HALO — equivalent to PR's aurora, top half, animated.
+  &__sun {
+    position: absolute;
+    inset: 0 0 55% 0;
+    background:
+      radial-gradient(60% 80% at 50% 40%, rgba(255, 200, 110, .35) 0%, transparent 70%),
+      radial-gradient(40% 60% at 30% 30%, rgba(255, 150, 90, .25) 0%, transparent 65%),
+      radial-gradient(50% 70% at 70% 35%, rgba(255, 180, 110, .25) 0%, transparent 65%);
+    filter: blur(10px);
+    animation: pp-splash-sun 18s ease-in-out infinite alternate;
+  }
+
+  // POLLEN — drifting dandelion seeds, equivalent to PR's snow.
+  &__pollen {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+  }
+  &__puff {
+    position: absolute;
+    top: -20px;
+    border-radius: 50%;
+    opacity: .9;
+    background:
+      radial-gradient(circle at 35% 35%, #ffffff 0%, #fff8e0 40%, rgba(255, 240, 200, 0) 75%);
+    box-shadow:
+      0 0 10px rgba(255, 255, 255, .8),
+      0 0 22px rgba(255, 220, 150, .35);
+    animation-name: pp-splash-puff;
+    animation-timing-function: cubic-bezier(.45, .05, .55, .95);
+    animation-iteration-count: infinite;
+    filter: drop-shadow(0 1px 1px rgba(120, 60, 20, .15));
+  }
+  &__puff::before {
+    content: '';
+    position: absolute;
+    inset: 35% 35% 35% 35%;
+    background: #ffd47a;
+    border-radius: 50%;
+  }
+
+  // PASTURE PLANE — equivalent to PR's ice plane. Bottom 22%, solid gradient.
+  // Top color matches the sunset horizon so the two layers fuse without a
+  // visible seam — the same trick PR uses with its dark-navy ice top.
+  &__pasture {
+    position: absolute;
+    inset: 78% 0 0 0;
+    background:
+      linear-gradient(180deg,
+        #5a3018 0%,           // horizon shadow band — bleeds into sunset above
+        #6a7344 6%,
+        #8aa164 18%,
+        #9ab36e 38%,
+        #87a25c 60%,
+        #6a8848 82%,
+        #506a3a 100%);
+  }
+
+  // HILLS — back row at bottom 24% h:14% drifting; front row at 22% h:22%
+  // stationary with props. Exact same scaffold as PR's icebergs.
+  &__hills {
+    position: absolute;
+    pointer-events: none;
+    svg { display: block; overflow: visible; width: 100%; height: 100%; }
+    &--back {
+      left: -50%;
+      width: 200%;
+      bottom: 24%;
+      height: 14%;
+      opacity: .65;
+      filter: blur(.5px);
+      animation: pp-splash-hill-drift 70s linear infinite;
+    }
+    &--front {
+      left: 0;
+      width: 100%;
+      bottom: 22%;
+      height: 22%;
+    }
+  }
+
+  // CONTENT OVERLAY — title centered, subtitle, best, CTA. PR's structure 1:1.
+  &__content {
+    position: absolute;
+    inset: 0;
+    z-index: 5;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    padding-bottom: max(48px, env(safe-area-inset-bottom, 24px));
+    text-align: center;
+  }
+
+  // TITLE — PR uses three-stack text-shadow for depth. Translated to warm
+  // sunset palette: very dark walnut stamp shadow at high opacity to make the
+  // letters punch out of the orange sky. "Pied" stays cool-white (max contrast
+  // against warm bg). "Piper" goes deep orange-red so the two colors offer
+  // strong warm/cool difference between the lines.
+  &__title {
+    margin: 0 0 18px;
+    font-family: 'Baloo 2', 'Space Grotesk', system-ui, sans-serif;
+    font-size: clamp(76px, 22vw, 124px);
+    font-weight: 800;
+    letter-spacing: -.01em;
+    line-height: .95;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    // Single softer drop shadow + warm halo. The stacked solid shadows in the
+    // prior version stamped a dark bar under the letters and made the whole
+    // title read brown. Soft glow lets the gradient fills speak.
+    filter:
+      drop-shadow(0 8px 24px rgba(28, 10, 4, .55))
+      drop-shadow(0 0 32px rgba(255, 200, 110, .25));
+  }
+  &__title-emph {
+    // "Pied" — pure white, no gradient. Maximum value contrast on warm bg.
+    color: #ffffff;
+    &--accent {
+      // "Piper" — saturated gold-to-red gradient. Bottom stays deep red so the
+      // word reads as warm and grounded, contrasting the cool-white above.
+      background: linear-gradient(180deg, #ffe17a 0%, #ff7a35 55%, #d23015 100%);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+    }
+  }
+  &__subtitle {
+    margin: 0 0 36px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: .18em;
+    text-transform: uppercase;
+    color: rgba(255, 240, 200, .82);
+    white-space: nowrap;
+  }
+
+  &__best {
+    margin-bottom: 24px;
+    padding: 6px 18px;
+    display: inline-flex;
+    align-items: baseline;
+    gap: 8px;
+    background: rgba(20, 14, 8, .35);
+    border: 1px solid rgba(255, 240, 200, .25);
+    border-radius: 999px;
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+  }
+  &__best-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    font-weight: 500;
+    letter-spacing: .25em;
+    color: rgba(255, 220, 130, .85);
+  }
+  &__best-value {
+    font-family: 'Baloo 2', sans-serif;
+    font-size: 18px;
+    font-weight: 800;
+    color: #ffd84a;
+    letter-spacing: -.01em;
+  }
+
+  &__cta {
+    position: relative;
+    background: linear-gradient(135deg, #ffe17a 0%, #ff9844 60%, #ff6b3a 100%);
+    color: #2a1d12;
+    border: none;
+    padding: 18px 44px;
+    border-radius: 999px;
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 800;
+    font-size: 15px;
+    letter-spacing: .18em;
+    text-transform: uppercase;
+    cursor: pointer;
+    box-shadow:
+      0 18px 40px rgba(255, 150, 60, .48),
+      inset 0 1px 0 rgba(255, 255, 255, .65);
+    z-index: 1;
+    transition: transform .15s ease;
+    &:active { transform: translateY(2px); }
+  }
+  &__cta-text {
+    position: relative; z-index: 2;
+  }
+  &__cta-pulse {
+    position: absolute;
+    inset: -4px;
+    border-radius: 999px;
+    border: 2px solid rgba(255, 200, 100, .65);
+    animation: pp-splash-cta-pulse 1.8s ease-out infinite;
+    pointer-events: none;
+  }
+}
+
+@keyframes pp-splash-puff {
+  0%   { transform: translate(-30px, -20px) rotate(0deg); }
+  25%  { transform: translate(20px, 28vh)  rotate(45deg); }
+  50%  { transform: translate(-10px, 56vh) rotate(90deg); }
+  75%  { transform: translate(40px, 82vh)  rotate(135deg); }
+  100% { transform: translate(0, 110vh)    rotate(180deg); }
+}
+@keyframes pp-splash-cta-pulse {
+  0%   { transform: scale(.96); opacity: .9; }
+  100% { transform: scale(1.22); opacity: 0; }
+}
+@keyframes pp-splash-hill-drift {
+  0%   { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+@keyframes pp-splash-sun {
+  0%   { opacity: .55; transform: translateX(-1%); }
+  100% { opacity: .95; transform: translateX( 1%); }
+}
