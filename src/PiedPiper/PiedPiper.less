@@ -472,6 +472,110 @@
   100% { transform: scale(2.6); opacity: 0;   }
 }
 
+// Round-clear celebration overlay. Holds for ~1.9s while the game loop
+// freezes, then auto-dismisses as the next round spawns.
+.pp__round-clear {
+  position: absolute;
+  inset: 0;
+  z-index: 18;
+  pointer-events: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  text-align: center;
+  background:
+    radial-gradient(60% 50% at 50% 50%, rgba(255, 220, 130, .18) 0%, transparent 70%),
+    rgba(8, 14, 8, .42);
+  backdrop-filter: blur(6px) saturate(140%);
+  -webkit-backdrop-filter: blur(6px) saturate(140%);
+  animation: pp-rclear-bg 1.9s ease-out forwards;
+  font-family: 'Space Grotesk', 'Inter', system-ui, sans-serif;
+  color: #f6efdc;
+}
+.pp__round-clear-eyebrow {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: .38em;
+  text-transform: uppercase;
+  color: #ffe17a;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, .5);
+  animation: pp-rclear-eyebrow 1.9s ease-out forwards;
+}
+.pp__round-clear-bonus {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+  font-family: 'Baloo 2', sans-serif;
+  font-weight: 800;
+  color: #ffd84a;
+  filter: drop-shadow(0 6px 20px rgba(255, 200, 80, .55));
+  animation: pp-rclear-bonus 1.9s cubic-bezier(.22, .61, .36, 1) forwards;
+}
+.pp__round-clear-plus { font-size: 48px; opacity: .9; line-height: 1; }
+.pp__round-clear-num  { font-size: 96px; line-height: .9; letter-spacing: -.02em; }
+.pp__round-clear-tag {
+  margin-left: 12px;
+  align-self: center;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: .25em;
+  text-transform: uppercase;
+  color: rgba(246, 239, 220, .65);
+}
+.pp__round-clear-next {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  font-family: 'Baloo 2', sans-serif;
+  font-weight: 800;
+  margin-top: 6px;
+  animation: pp-rclear-next 1.9s ease-out forwards;
+}
+.pp__round-clear-arrow {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: .3em;
+  text-transform: uppercase;
+  color: rgba(246, 239, 220, .65);
+}
+.pp__round-clear-env {
+  font-size: 26px;
+  color: #f6efdc;
+  letter-spacing: .04em;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, .55);
+}
+
+@keyframes pp-rclear-bg {
+  0%   { opacity: 0; }
+  12%  { opacity: 1; }
+  85%  { opacity: 1; }
+  100% { opacity: 0; }
+}
+@keyframes pp-rclear-eyebrow {
+  0%   { opacity: 0; transform: translateY(-12px); }
+  18%  { opacity: 1; transform: translateY(0); }
+  82%  { opacity: 1; transform: translateY(0); }
+  100% { opacity: 0; transform: translateY(-6px); }
+}
+@keyframes pp-rclear-bonus {
+  0%   { opacity: 0; transform: scale(.55); }
+  22%  { opacity: 1; transform: scale(1.12); }
+  35%  { opacity: 1; transform: scale(1.00); }
+  82%  { opacity: 1; transform: scale(1.00); }
+  100% { opacity: 0; transform: scale(.92); }
+}
+@keyframes pp-rclear-next {
+  0%, 30%   { opacity: 0; transform: translateY(8px); }
+  50%       { opacity: 1; transform: translateY(0); }
+  82%       { opacity: 1; transform: translateY(0); }
+  100%      { opacity: 0; transform: translateY(-4px); }
+}
+
 // World-space bark wave (drei <Html>) — circles centered on the dog, always
 // rendered as perfect circles because they're DOM elements (border-radius:50%).
 .pp-barkwave {

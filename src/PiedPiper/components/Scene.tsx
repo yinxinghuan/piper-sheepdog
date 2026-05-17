@@ -1,14 +1,15 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
 import { Html } from '@react-three/drei';
 import * as THREE from 'three';
 import { CAMERA_FOV, CAMERA_POS, PLAYFIELD } from '../constants';
+import { envForRound } from '../environment';
 import { Sheep } from './Sheep';
 import { Dog } from './Dog';
 import { Gate } from './Gate';
 import { Wolf } from './Wolf';
 import { SceneProps } from './SceneProps';
-import { useGameLoop, GameRef, SfxKey, DeliveryInfo } from '../hooks/useGameLoop';
+import { useGameLoop, GameRef, SfxKey, DeliveryInfo, RoundClearInfo } from '../hooks/useGameLoop';
 import type { Stick } from '../types';
 
 interface SceneProps_ {
@@ -20,7 +21,7 @@ interface SceneProps_ {
   onCombo: (combo: number, mult: number) => void;
   onDelivery: (info: DeliveryInfo) => void;
   onWolfHit: (count: number) => void;
-  onRoundClear: (round: number) => void;
+  onRoundClear: (info: RoundClearInfo) => void;
   onRoundFail: (final: number) => void;
   onBarkUpdate: (cooldown: number) => void;
   playSfx: (k: SfxKey) => void;
@@ -207,15 +208,17 @@ export function Scene(props: SceneProps_) {
   });
 
   const d = state.current;
+  const env = envForRound(d.round);
 
   return (
     <>
       <FollowCamera state={state} />
-      <fog attach="fog" args={['#9fb695', PLAYFIELD * 1.0, PLAYFIELD * 2.3]} />
-      <ambientLight intensity={0.6} />
+      <fog attach="fog" args={[env.fog.color, env.fog.near, env.fog.far]} />
+      <ambientLight color={env.ambient.color} intensity={env.ambient.intensity} />
       <directionalLight
-        position={[18, 38, 8]}
-        intensity={1.5}
+        position={env.directional.position}
+        color={env.directional.color}
+        intensity={env.directional.intensity}
         castShadow
         shadow-mapSize={[2048, 2048]}
         shadow-camera-left={-30}
@@ -226,27 +229,27 @@ export function Scene(props: SceneProps_) {
         shadow-camera-far={80}
         shadow-bias={-0.0008}
       />
-      <hemisphereLight args={['#b0c098', '#5a6948', 0.42]} />
+      <hemisphereLight args={[env.hemisphere.sky, env.hemisphere.ground, env.hemisphere.intensity]} />
 
-      {/* far green background — muted olive */}
+      {/* far background — env tinted */}
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.05, 0]} receiveShadow>
         <planeGeometry args={[PLAYFIELD * 4, PLAYFIELD * 4]} />
-        <meshStandardMaterial color="#5d7548" />
+        <meshStandardMaterial color={env.pasture.outerBg} />
       </mesh>
-      {/* outer pasture ring — slightly darker */}
+      {/* outer pasture ring */}
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.02, 0]}>
         <ringGeometry args={[PLAYFIELD / 2 + 2.5, PLAYFIELD / 2 + 14, 64]} />
-        <meshStandardMaterial color="#43592f" />
+        <meshStandardMaterial color={env.pasture.outerRing} />
       </mesh>
-      {/* main pasture disc — sage */}
+      {/* main pasture disc */}
       <mesh receiveShadow rotation={[-Math.PI / 2, 0, 0]} position={[0, 0, 0]}>
         <circleGeometry args={[PLAYFIELD / 2 + 4, 64]} />
-        <meshStandardMaterial color="#7a9462" roughness={0.95} />
+        <meshStandardMaterial color={env.pasture.main} roughness={0.95} />
       </mesh>
-      {/* inner slightly lighter patch */}
+      {/* inner brighter patch */}
       <mesh receiveShadow rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.005, 0]}>
         <circleGeometry args={[PLAYFIELD / 2 - 2, 48]} />
-        <meshStandardMaterial color="#8aa471" roughness={0.92} />
+        <meshStandardMaterial color={env.pasture.inner} roughness={0.92} />
       </mesh>
       {/* scattered grass tuft planes */}
       {[
@@ -265,7 +268,7 @@ export function Scene(props: SceneProps_) {
           position={[c.x, 0.01, c.z]}
         >
           <planeGeometry args={[c.w, c.len]} />
-          <meshStandardMaterial color="#5d7548" transparent opacity={0.55} />
+          <meshStandardMaterial color={env.pasture.tuft} transparent opacity={0.55} />
         </mesh>
       ))}
 
@@ -285,7 +288,68 @@ export function Scene(props: SceneProps_) {
       ))}
 
       <BarkWave state={state} />
+      {env.extra === 'fireflies' && <Fireflies />}
       <ActorSync state={state} />
     </>
+  );
+}
+
+// Glowing yellow-green points slowly drifting near the ground — night extra.
+function Fireflies() {
+  const COUNT = 60;
+  const ref = useRef<THREE.Points>(null);
+  const { positions, vel } = useMemo(() => {
+    const positions = new Float32Array(COUNT * 3);
+    const vel = new Float32Array(COUNT * 3);
+    for (let i = 0; i < COUNT; i++) {
+      positions[i * 3 + 0] = (Math.random() - 0.5) * PLAYFIELD;
+      positions[i * 3 + 1] = 0.5 + Math.random() * 2.0;
+      positions[i * 3 + 2] = (Math.random() - 0.5) * PLAYFIELD;
+      vel[i * 3 + 0] = (Math.random() - 0.5) * 0.6;
+      vel[i * 3 + 1] = (Math.random() - 0.5) * 0.3;
+      vel[i * 3 + 2] = (Math.random() - 0.5) * 0.6;
+    }
+    return { positions, vel };
+  }, []);
+  useFrame(({ clock }, delta) => {
+    const p = ref.current;
+    if (!p) return;
+    const arr = p.geometry.attributes.position.array as Float32Array;
+    const c = Math.min(delta, 0.05);
+    const t = clock.getElapsedTime();
+    for (let i = 0; i < COUNT; i++) {
+      const xi = i * 3, yi = i * 3 + 1, zi = i * 3 + 2;
+      arr[xi] += vel[xi] * c + Math.sin(t * 0.7 + i) * 0.005;
+      arr[yi] += vel[yi] * c;
+      arr[zi] += vel[zi] * c + Math.cos(t * 0.6 + i * 1.3) * 0.005;
+      if (arr[yi] < 0.3 || arr[yi] > 3.0) vel[yi] *= -1;
+      if (Math.abs(arr[xi]) > PLAYFIELD / 2) vel[xi] *= -1;
+      if (Math.abs(arr[zi]) > PLAYFIELD / 2) vel[zi] *= -1;
+    }
+    p.geometry.attributes.position.needsUpdate = true;
+    // Subtle global twinkle so the swarm reads as alive.
+    const m = p.material as THREE.PointsMaterial;
+    m.opacity = 0.55 + Math.sin(t * 1.4) * 0.18;
+  });
+  return (
+    <points ref={ref}>
+      <bufferGeometry>
+        <bufferAttribute
+          attach="attributes-position"
+          count={COUNT}
+          array={positions}
+          itemSize={3}
+          args={[positions, 3]}
+        />
+      </bufferGeometry>
+      <pointsMaterial
+        color="#fff19a"
+        size={0.32}
+        sizeAttenuation
+        transparent
+        opacity={0.65}
+        depthWrite={false}
+      />
+    </points>
   );
 }

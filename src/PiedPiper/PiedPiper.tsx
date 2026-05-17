@@ -3,8 +3,8 @@ import { Canvas } from '@react-three/fiber';
 import { Leaderboard, useGameScore } from '@shared/leaderboard';
 import { Scene } from './components/Scene';
 import { SplashScene } from './components/SplashScene';
-import { createGameState } from './hooks/useGameLoop';
-import type { DeliveryInfo } from './hooks/useGameLoop';
+import { createGameState, ROUND_CLEAR_DURATION } from './hooks/useGameLoop';
+import type { DeliveryInfo, RoundClearInfo } from './hooks/useGameLoop';
 import { useJoystick } from './hooks/useJoystick';
 import { playSfx, startBgm, stopBgm, unlockAudio } from './utils/audio';
 import { t } from './i18n';
@@ -12,6 +12,7 @@ import {
   BARK_COOLDOWN, DYE_NAME, DYE_PALETTE, NpcBehavior,
   TARGET_PER_GATE, roundTime,
 } from './constants';
+import { nextEnvForRound } from './environment';
 import alteruSvg from './img/alteru.svg';
 import './PiedPiper.less';
 import './SplashScene.less';
@@ -56,6 +57,9 @@ export function PiedPiper() {
   const [rightGate, setRightGate] = useState<GateProgress>({ color: 1, delivered: 0 });
   const [barkCooldown, setBarkCooldown] = useState(0);
   const [barkFire, setBarkFire] = useState<{ key: number } | null>(null);
+  const [roundClearFx, setRoundClearFx] = useState<{
+    key: number; round: number; bonus: number; nextEnvName: string;
+  } | null>(null);
   const [behavior] = useState<NpcBehavior>(() => {
     const v = localStorage.getItem(BEHAVIOR_KEY);
     return (v === 'static' || v === 'wander' || v === 'flock') ? v : 'wander';
@@ -101,8 +105,16 @@ export function PiedPiper() {
     setTimeout(() => setWolfFx(cur => (cur && cur.key === key ? null : cur)), 1400);
   }, []);
 
-  const onRoundClear = useCallback((r: number) => {
-    setRound(r + 1);
+  const onRoundClear = useCallback((info: RoundClearInfo) => {
+    const key = Date.now() + Math.random();
+    const next = nextEnvForRound(info.round);
+    setRoundClearFx({ key, round: info.round, bonus: info.bonus, nextEnvName: next.name });
+    // Game loop auto-advances after ROUND_CLEAR_DURATION seconds; mirror that
+    // in the UI so the banner dismisses in sync with the round number ticking
+    // up (round state is updated by the rAF watcher below).
+    window.setTimeout(() => {
+      setRoundClearFx(cur => (cur && cur.key === key ? null : cur));
+    }, ROUND_CLEAR_DURATION * 1000);
   }, []);
 
   const onRoundFail = useCallback((final: number) => {
@@ -149,7 +161,7 @@ export function PiedPiper() {
     localStorage.setItem(BEHAVIOR_KEY, behavior);
   }, [behavior]);
 
-  // Mirror gate state from the game ref so the HUD pips stay live.
+  // Mirror gate state + round number from the game ref so the HUD stays live.
   useEffect(() => {
     if (phase !== 'playing') return;
     let raf = 0;
@@ -167,6 +179,7 @@ export function PiedPiper() {
           ? prev
           : { color: rg.color, delivered: rg.delivered });
       }
+      setRound(prev => prev === d.round ? prev : d.round);
       raf = requestAnimationFrame(tick);
     };
     raf = requestAnimationFrame(tick);
@@ -298,6 +311,21 @@ export function PiedPiper() {
             <span className="pp__wolf-minus">−</span>
             <span className="pp__wolf-count">{wolfFx.count}</span>
             <span className="pp__wolf-label">SCATTERED</span>
+          </div>
+        </div>
+      )}
+
+      {roundClearFx && (
+        <div className="pp__round-clear" key={roundClearFx.key}>
+          <div className="pp__round-clear-eyebrow">ROUND {roundClearFx.round} CLEAR</div>
+          <div className="pp__round-clear-bonus">
+            <span className="pp__round-clear-plus">+</span>
+            <span className="pp__round-clear-num">{roundClearFx.bonus}</span>
+            <span className="pp__round-clear-tag">TIME BONUS</span>
+          </div>
+          <div className="pp__round-clear-next">
+            <span className="pp__round-clear-arrow">NEXT</span>
+            <span className="pp__round-clear-env">{roundClearFx.nextEnvName}</span>
           </div>
         </div>
       )}

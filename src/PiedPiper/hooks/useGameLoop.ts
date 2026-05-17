@@ -40,6 +40,13 @@ export interface GameRef {
   barkFireX: number;
   barkFireZ: number;
 
+  // Round-clear celebration: while > 0, the loop is paused (no movement, no
+  // attract, no delivery, no wolf bite). Auto-advance to next round when the
+  // banner duration elapses.
+  roundClearAt: number;     // d.time when current round was cleared (-1 = none)
+  roundClearBonus: number;
+  roundClearAdvanced: boolean;
+
   // Behavior selection (NPC AI mode)
   behavior: NpcBehavior;
 
@@ -67,6 +74,9 @@ export function createGameState(): GameRef {
     barkFireT: -10,
     barkFireX: 0,
     barkFireZ: 0,
+    roundClearAt: -1,
+    roundClearBonus: 0,
+    roundClearAdvanced: false,
     behavior: DEFAULT_BEHAVIOR,
     initialized: false,
   };
@@ -175,6 +185,11 @@ export interface DeliveryInfo {
   comboMult: number;
 }
 
+export interface RoundClearInfo {
+  round: number;
+  bonus: number;
+}
+
 export interface GameLoopParams {
   state: React.MutableRefObject<GameRef>;
   playing: boolean;
@@ -184,12 +199,16 @@ export interface GameLoopParams {
   onCombo: (combo: number, mult: number) => void;
   onDelivery: (info: DeliveryInfo) => void;
   onWolfHit: (count: number) => void;
-  onRoundClear: (round: number) => void;
+  onRoundClear: (info: RoundClearInfo) => void;
   onRoundFail: (finalScore: number) => void;
   onBarkUpdate: (cooldown: number) => void;
   playSfx: (key: SfxKey) => void;
   haptic?: (kind: 'light' | 'heavy') => void;
 }
+
+// How long the celebration banner holds the world before the next round
+// auto-starts. The UI should show the overlay for the same duration.
+export const ROUND_CLEAR_DURATION = 1.9;
 
 export function useGameLoop(p: GameLoopParams) {
   const { state, playing, stick, onScore, onTime, onCombo, onWolfHit,
@@ -204,6 +223,23 @@ export function useGameLoop(p: GameLoopParams) {
     const d = state.current;
     if (!playing || d.gameOver) return;
     const c = Math.min(delta, 0.05);
+
+    // During the round-clear celebration, advance time only enough to know
+    // when to auto-start the next round. Everything else pauses so the
+    // banner reads clearly.
+    if (d.roundClearAt >= 0) {
+      d.time += c;
+      const elapsed = d.time - d.roundClearAt;
+      if (elapsed >= ROUND_CLEAR_DURATION && !d.roundClearAdvanced) {
+        d.roundClearAdvanced = true;
+        startRound(d, d.round + 1);
+        d.roundClearAt = -1;
+        d.roundClearBonus = 0;
+        d.roundClearAdvanced = false;
+        onTime(d.timeLeft);
+      }
+      return;
+    }
 
     d.time += c;
     d.timeLeft -= c;
@@ -433,11 +469,12 @@ export function useGameLoop(p: GameLoopParams) {
     if (leftDone && rightDone) {
       const bonus = Math.round(Math.max(0, d.timeLeft));
       d.score += bonus;
+      d.roundClearBonus = bonus;
+      d.roundClearAt = d.time;
       onScore(d.score);
       playSfx('round_clear');
       haptic?.('heavy');
-      onRoundClear(d.round);
-      startRound(d, d.round + 1);
+      onRoundClear({ round: d.round, bonus });
     } else if (d.timeLeft <= 0 && d.time > GRACE_PERIOD) {
       d.gameOver = true;
       playSfx('round_fail');
