@@ -22,11 +22,15 @@ export const COMBO_MAX_MULT = 3;
 // Each round picks 2 colors out of this pool and assigns one to each gate.
 export const COLOR_TYPES = 4;
 export const TARGET_PER_GATE = 3;        // need 3 of each color → 6 deliveries per round
+// Spawn a buffer of target-color sheep on top of TARGET_PER_GATE so wolves /
+// detachment / wanderers can't lock the round into "impossible" state when the
+// player only loses 1-2 of a color.
+export const TARGET_SPAWN_BUFFER = 2;    // → 5 of each target color spawn on round 1
 
 // Field NPC counts per round, scaled with round number.
-export const NPC_BASE_COUNT = 12;        // round 1
+export const NPC_BASE_COUNT = 16;        // round 1 — leaves room for buffered targets + distractors
 export const NPC_PER_ROUND_BONUS = 1;    // +N per round, capped
-export const NPC_COUNT_CAP = 18;
+export const NPC_COUNT_CAP = 22;
 
 // Wolves spawn count per round.
 export const WOLF_BASE_COUNT = 1;

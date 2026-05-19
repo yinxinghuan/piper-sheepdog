@@ -4,7 +4,7 @@ import {
   PLAYFIELD, PLAYER_SPEED, SPEED_DECAY, MIN_SPEED_FACTOR, BODY_FOLLOW_SPEED,
   ATTRACT_RADIUS, DETACH_RADIUS, DETACH_TIME,
   CORRECT_SCORE, WRONG_SCORE, COMBO_MAX_MULT,
-  COLOR_TYPES, TARGET_PER_GATE,
+  COLOR_TYPES, TARGET_PER_GATE, TARGET_SPAWN_BUFFER,
   GATE_RADIUS, GATE_OFFSET_Z, GATE_SPREAD_X,
   GRACE_PERIOD, DEFAULT_BEHAVIOR,
   WOLF_PROWL_SPEED, WOLF_CHASE_SPEED, WOLF_CHASE_TRIGGER,
@@ -120,12 +120,13 @@ function startRound(d: GameRef, round: number) {
     { id: 'right', position: new THREE.Vector3( GATE_SPREAD_X, 0, GATE_OFFSET_Z), color: rightColor, delivered: 0 },
   ];
 
-  // spawn sheep — guarantee at least TARGET_PER_GATE of each gate color, plus distractors.
+  // spawn sheep — guarantee TARGET_PER_GATE + TARGET_SPAWN_BUFFER of each gate
+  // color so wolves / detachment can't lock the round, plus distractors.
   const totalSheep = roundSheepCount(round);
-  const minTargets = TARGET_PER_GATE;
+  const minTargets = TARGET_PER_GATE + TARGET_SPAWN_BUFFER;
   for (let i = 0; i < minTargets; i++) d.sheep.push(makeSheep(leftColor, placeSheep()));
   for (let i = 0; i < minTargets; i++) d.sheep.push(makeSheep(rightColor, placeSheep()));
-  const remaining = totalSheep - 2 * minTargets;
+  const remaining = Math.max(0, totalSheep - 2 * minTargets);
   for (let i = 0; i < remaining; i++) {
     // distractors: bias toward target colors so the field doesn't feel sparse
     const r = Math.random();
