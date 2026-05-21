@@ -69,8 +69,8 @@ export function PiedPiper() {
   const { stickRef, view } = useJoystick(phase === 'playing');
 
   const {
-    isInAigram, submitScore, fetchGlobalLeaderboard, fetchFriendsLeaderboard,
-  } = useGameScore('piper-sheepdog');
+    isInAigram, submitScore, fetchLeaderboard,
+  } = useGameScore();
 
   const haptic = useCallback((kind: 'light' | 'heavy') => {
     if (!('vibrate' in navigator)) return;
@@ -361,8 +361,7 @@ export function PiedPiper() {
           gameName={t('title')}
           isInAigram={isInAigram}
           onClose={() => setShowLeaderboard(false)}
-          fetchGlobal={fetchGlobalLeaderboard}
-          fetchFriends={fetchFriendsLeaderboard}
+          fetch={fetchLeaderboard}
         />
       )}
     </div>
