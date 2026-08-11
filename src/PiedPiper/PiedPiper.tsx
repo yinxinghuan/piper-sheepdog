@@ -44,7 +44,7 @@ export function PiedPiper() {
   const [phase, setPhase] = useState<Phase>('splash');
   const [score, setScore] = useState(0);
   const [timeLeft, setTimeLeft] = useState(roundTime(1));
-  const [highScore, setHighScore] = useState<number>(() => Number(localStorage.getItem(HIGH_KEY) || 0));
+  const [highScore, setHighScore] = useState<number>(() => Number(alteruLocalStorage.getItem(HIGH_KEY) || 0));
   const [finalScore, setFinalScore] = useState(0);
   const [showLeaderboard, setShowLeaderboard] = useState(false);
   const [pellet, setPellet] = useState<Pellet | null>(null);
@@ -61,7 +61,7 @@ export function PiedPiper() {
     key: number; round: number; bonus: number; nextEnvName: string;
   } | null>(null);
   const [behavior] = useState<NpcBehavior>(() => {
-    const v = localStorage.getItem(BEHAVIOR_KEY);
+    const v = alteruLocalStorage.getItem(BEHAVIOR_KEY);
     return (v === 'static' || v === 'wander' || v === 'flock') ? v : 'wander';
   });
 
@@ -122,7 +122,7 @@ export function PiedPiper() {
     setPhase('gameover');
     stopBgm();
     if (final > highScore) {
-      localStorage.setItem(HIGH_KEY, String(final));
+      alteruLocalStorage.setItem(HIGH_KEY, String(final));
       setHighScore(final);
     }
     submitScore(final).catch(() => { /* silent */ });
@@ -158,7 +158,7 @@ export function PiedPiper() {
 
   useEffect(() => {
     stateRef.current.behavior = behavior;
-    localStorage.setItem(BEHAVIOR_KEY, behavior);
+    alteruLocalStorage.setItem(BEHAVIOR_KEY, behavior);
   }, [behavior]);
 
   // Mirror gate state + round number from the game ref so the HUD stays live.
